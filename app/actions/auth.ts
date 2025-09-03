@@ -38,3 +38,114 @@ export type ActionResponse = {
   errors?: Record<string, string[]>
   error?: string
 }
+
+export const signin = async (formData: FormData): Promise<ActionResponse> => {
+  try {
+    const data = {
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+    }
+
+    const validationResult = SignInSchema.safeParse(data)
+    if (!validationResult.success) {
+      return {
+        success: false,
+        message: 'Validation failed',
+        errors: validationResult.error.flatten().fieldErrors,
+      }
+    }
+
+    const user = await getUserByEmail()
+    if (!user) {
+      return {
+        success: false,
+        message: 'Invalid email or password',
+        errors: {
+          email: ['Invalid email or password'],
+        },
+      }
+    }
+    const isPasswordValid = await verifyPassword(data.password, user.password)
+    if (!isPasswordValid) {
+      return {
+        success: false,
+        message: 'Invalid email or password',
+        errors: {
+          email: ['Invalid email or password'],
+        },
+      }
+    }
+    await createSession(user.id)
+
+    return {
+      success: true,
+      message: 'Signed in successfully',
+    }
+  } catch (e) {
+    return {
+      success: false,
+      message: 'An error occurred during sign in',
+      error: (e as Error).message,
+    }
+  }
+}
+
+export const signup = async (formData: FormData) => {
+  try {
+    const data = {
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      confirmPassword: formData.get('confirmPassword'),
+    }
+    const validationResult = SignUpSchema.safeParse(data)
+    if (!validationResult.success) {
+      return {
+        success: false,
+        message: 'Validation failed',
+        errors: validationResult.error.flatten().fieldErrors,
+      }
+    }
+    const exitingUser = await getUserByEmail(data.email)
+    if (exitingUser) {
+      return {
+        success: false,
+        message: 'User already exists',
+        errors: {
+          email: ['User already exists'],
+        },
+      }
+    }
+
+    const user = await createUser(data.email, data.password)
+    if (!user) {
+      return {
+        success: false,
+        message: 'Failed to create user',
+        error: 'Failed to create user',
+      }
+    }
+    await createSession(user.id)
+    return {
+      success: true,
+      message: 'User created successfully',
+    }
+  } catch (e) {
+    console.error(e)
+    return {
+      success: false,
+      message: 'An error occurred during sign up',
+      error: (e as Error).message,
+    }
+  }
+}
+
+export const signOut = async () => {
+  try {
+    await deleteSession()
+  } catch (e) {
+    console.error(e)
+    throw e
+  } finally {
+    redirect('/signin')
+  }
+}
