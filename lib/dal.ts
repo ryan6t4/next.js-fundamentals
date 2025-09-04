@@ -6,6 +6,7 @@ import { issues, users } from '@/db/schema'
 import { mockDelay } from './utils'
 
 export const getCurrentUser = async () => {
+  await mockDelay(100) // Simulate network delay
   const session = await getSession()
   if (!session) {
     return null
@@ -32,5 +33,21 @@ export const getUserByEmail = async (email: string) => {
   } catch (e) {
     console.error(e)
     return null
+  }
+}
+
+export async function getIssues() {
+  try {
+    await mockDelay(1000) // Simulate network delay
+    const result = await db.query.issues.findMany({
+      with: {
+        user: true,
+      },
+      orderBy: (issues, { desc }) => [desc(issues.createdAt)],
+    })
+    return result
+  } catch (error) {
+    console.error('Error fetching issues:', error)
+    throw new Error('Failed to fetch issues')
   }
 }
