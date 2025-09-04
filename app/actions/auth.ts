@@ -55,7 +55,7 @@ export const signIn = async (formData: FormData): Promise<ActionResponse> => {
       }
     }
 
-    const user = await getUserByEmail()
+    const user = await getUserByEmail(data.email)
     if (!user) {
       return {
         success: false,
@@ -105,7 +105,7 @@ export const signUp = async (formData: FormData) => {
         errors: validationResult.error.flatten().fieldErrors,
       }
     }
-    const exitingUser = await getUserByEmail(data.email)
+    const exitingUser = await getUserByEmail()
     if (exitingUser) {
       return {
         success: false,
